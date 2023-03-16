@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Garaż</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+</head>
+<body>
+<h3>Wybierz garaż:</h3>
+<select id="garageSelect" name="garage" onchange="changeTable(this.id,'carTBody')">
+    <option value="" disabled selected>wybierz garaż</option>
+    <option th:each="garage : ${garages}" th:text="${garage}" th:value="${garage.id}"></option>
+</select>
+<br>
+<br>
+<table id="carsTable">
+    <thead>
+    <tr>
+        <th> ID</th>
+        <th> Marka</th>
+        <th> Model</th>
+        <th> Rodzaj paliwa</th>
+        <th> Akcja</th>
+    </tr>
+    </thead>
+    <tbody id="carTBody">
+    </tbody>
+</table>
+<br>
+<br>
+<h3>Dodaj samochód do garażu:</h3>
+<select id="carSelect" name="car">
+    <option value="" disabled selected>wybierz garaż</option>
+</select>
+<button onclick="addCarToGarage('carSelect','garageSelect')">Zapisz</button>
+</body>
+</html>
+
+
+
+<script type="text/javascript">
+    function deleteCarFromGarage(carId){
+        let url = "/cars/delete/" + carId;
+        $.ajax({
+            url: url,
+            type: 'PATCH',
+            success: function () {
+                changeTable('garageSelect','carTBody');
+            },
+            error: function () {
+                alert("Wystąpił błąd");
+            }
+        });
+    }
+    function addCarToGarage(carSelectId,garageSelectId){
+        let garageSelect = document.getElementById(garageSelectId);
+        let carSelect = document.getElementById(carSelectId);
+        let url = "/cars/add/" + carSelect.value +"?garageId=" + garageSelect.value;
+        $.ajax({
+            url: url,
+            type: 'PATCH',
+            success: function () {
+                changeTable('garageSelect','carTBody');
+            },
+            error: function () {
+                alert("Wystąpił błąd");
+            }
+        });
+    }
+
+    function populateCars(carSelectId, garageSelectId) {
+        let carSelect = document.getElementById(carSelectId);
+        let garageSelect = document.getElementById(garageSelectId);
+        let url = "/cars?garageId=" + garageSelect.value;
+        $.getJSON(url, function (data) {
+            carSelect.innerHTML = '<option value="" disabled selected>wybierz samochód</option>';
+            data.forEach(car => {
+                let option = '<option value="' + car.id + '">' + car.brand + ' ' + car.model + ' ' + car.fuelType + '</option>';
+                carSelect.innerHTML += option;
+            })
+        });
+    }
+
+    function changeTable(optionValue, carTBody) {
+        let garageId = document.getElementById(optionValue);
+        let url = "/cars/find/" + garageId.value;
+        let cars = document.getElementById(carTBody);
+        populateCars('carSelect', 'garageSelect');
+        $.getJSON(url, function (data) {
+            cars.innerHTML = "";
+            data.forEach(car => {
+                let row = cars.insertRow(0);
+                let cell1 = row.insertCell(0);
+                let cell2 = row.insertCell(1);
+                let cell3 = row.insertCell(2);
+                let cell4 = row.insertCell(3);
+                let cell5 = row.insertCell(4);
+                cell1.innerHTML = car.id;
+                cell2.innerHTML = car.brand;
+                cell3.innerHTML = car.model;
+                cell4.innerHTML = car.fuelType;
+                cell5.innerHTML = '<button onClick="deleteCarFromGarage(' + car.id +')">Usuń</button>';
+            })
+        });
+    }
+
+</script>
